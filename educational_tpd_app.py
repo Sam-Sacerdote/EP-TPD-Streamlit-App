@@ -6,6 +6,9 @@ from tpd_locations_nd import ep_location, tpd_location
 # Create a title for the App
 st.title("EP and TPD Locations")
 
+# Link to preprint of the paper
+st.markdown("[Unification of Exceptional Points and Transmission Peak Degeneracies in a Highly Tunable Magnon-Photon Dimer](https://arxiv.org/abs/2506.09141)")
+
 # Create sidebar with the Parameters
 st.sidebar.header("System Parameters")
 kappa_tilde_c = st.sidebar.slider(r"$\tilde{\kappa}_c$", 0.0, 3.5, 0.68, step=0.01)

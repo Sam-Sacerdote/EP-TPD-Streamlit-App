@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
 from tpd_locations_nd import ep_location, tpd_location
+from pt_peaks_MODEL import peak_location
 
 # Create a title for the App
 st.title("EP and TPD Locations")
@@ -11,7 +12,7 @@ st.markdown("[Unification of Exceptional Points and Transmission Peak Degeneraci
 
 # Create sidebar with the Parameters
 st.sidebar.header("System Parameters")
-kappa_tilde_c = st.sidebar.slider(r"$\tilde{\kappa}_c$", 0.0, 3.5, 0.68, step=0.01)
+kappa_tilde_c = st.sidebar.slider(r"$\tilde{\kappa}_c$", 0.0, 2.5, 0.68, step=0.01)
 
 phi_labels = {
     "0": 0.0,
@@ -149,4 +150,77 @@ fig1.update_layout(
 
 st.plotly_chart(fig1, use_container_width=True)
 
-# Next step: create peak splitting plot for the primary TPD displayed (and chosen path)
+# Plot peak splitting of primary TPD
+# Set J and f_c to 1 and 0 respectively
+J = 1.0
+f_c = 0.0
+
+# Find Location of Primary TPD
+primary_tpd = None
+for degen in tpds:
+    if degen.degeneracy_type.name == "PRIMARY_TPD":
+        primary_tpd = degen
+        break
+if primary_tpd is not None:
+    dk_center = primary_tpd.Delta_tilde_kappa
+    df_center = primary_tpd.Delta_tilde_f
+else:
+    dk_center = 0
+    df_center = 0
+
+# Create different x axes depending on phi
+if phi == 0:
+    x2_label = '𝛥̃ₖ'
+    x2 = np.linspace(dk_center - 1, dk_center + 1, 2000)
+    delta_f = 0
+elif phi == np.pi:
+    x2_label = '𝛥̃𝑓'
+    x2 = np.linspace(df_center - 1, df_center + 1, 2000)
+    delta_kappa = 0
+elif phi == 0.5 * np.pi:
+    x2_label = '𝛥̃ₖ'
+    x2 = np.linspace(dk_center - 0.15, dk_center + 0.25, 2000)
+else:
+    x2 = np.linspace(dk_center - 0.15, dk_center + 0.25, 2000)
+
+# Set up nu+, nu- and nu_0
+nu_plus = np.full_like(x2, np.nan)
+nu_minus = np.full_like(x2, np.nan)
+nu_0 = np.full_like(x2, np.nan)
+
+# Calculate peak_locations for each x value
+for i, x in enumerate(x2):
+    if phi == 0:
+        result = peak_location(J, f_c, kappa_tilde_c, delta_f, x, phi)
+    elif phi == np.pi:
+        result = peak_location(J, f_c, kappa_tilde_c, x, delta_kappa, phi)
+    elif phi == 0.5 * np.pi:
+        result = peak_location(J, f_c, kappa_tilde_c, (2 * np.sin(phi)) / x, x, phi)
+    else:
+        result = [0]
+
+    if len(result) == 2:
+        nu_plus[i] = result[0]
+        nu_minus[i] = result[1]
+    else:
+        nu_0[i] = result[0]
+
+# If phi is 0, pi/2, or pi plot the splitting
+if phi in (0, np.pi/2, np.pi):
+    fig2 = go.Figure()
+
+    fig2.add_trace(go.Scatter(x=x2, y=nu_plus, mode='lines', name='ν₊₋', legendgroup='nu_pm', line=dict(width=4, color='black')))
+    fig2.add_trace(go.Scatter(x=x2, y=nu_minus, mode='lines', showlegend=False, line=dict(width=4, color='black')))
+    fig2.add_trace(go.Scatter(x=x2, y=nu_0, mode='lines', showlegend=False, line=dict(width=4, color='black')))
+
+    fig2.update_layout(
+        title=f"Primary TPD Peak Splitting",
+        title_font = dict(size=25),
+        xaxis_title = x2_label,
+        yaxis_title = "Frequency [arb.]",
+        xaxis_title_font = dict(size=20),
+        yaxis_title_font = dict(size=20),
+        height=500
+    )
+
+    st.plotly_chart(fig2, use_container_width=True)

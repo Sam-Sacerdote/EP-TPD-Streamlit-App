@@ -24,18 +24,32 @@ class Degeneracy:
 
 def ep_location(phi) -> list[Degeneracy]:
     # Two EPs at each phi
-    return [
-        Degeneracy(
-            degeneracy_type=DegeneracyType.PRIMARY_EP,
-            Delta_tilde_kappa=-2 * np.cos(phi / 2),
-            Delta_tilde_f=-2 * np.sin(phi / 2)
-        ),
-        Degeneracy(
-            degeneracy_type=DegeneracyType.SECONDARY_EP,
-            Delta_tilde_kappa=2 * np.cos(phi / 2),
-            Delta_tilde_f=2 * np.sin(phi / 2)
-        )
-    ]
+    if phi < np.pi:
+        return [
+            Degeneracy(
+                degeneracy_type=DegeneracyType.PRIMARY_EP,
+                Delta_tilde_kappa=-2 * np.cos(phi / 2),
+                Delta_tilde_f=-2 * np.sin(phi / 2)
+            ),
+            Degeneracy(
+                degeneracy_type=DegeneracyType.SECONDARY_EP,
+                Delta_tilde_kappa=2 * np.cos(phi / 2),
+                Delta_tilde_f=2 * np.sin(phi / 2)
+            )
+        ]
+    else:
+        return [
+            Degeneracy(
+                degeneracy_type=DegeneracyType.PRIMARY_EP,
+                Delta_tilde_kappa= 2 * np.cos(phi / 2),
+                Delta_tilde_f= 2 * np.sin(phi / 2)
+            ),
+            Degeneracy(
+                degeneracy_type=DegeneracyType.SECONDARY_EP,
+                Delta_tilde_kappa= -2 * np.cos(phi / 2),
+                Delta_tilde_f= -2 * np.sin(phi / 2)
+            )
+        ]
 
 def tpd_location(phi, kappa_tilde_c) -> list[Degeneracy]:
     # There can be up to 6 TPDs at each phi. Usually there are less.
@@ -105,7 +119,7 @@ def __tpd_location_any_phase(phi, kappa_tilde_c):
         corresponding_df = -1 * (-kappa_tilde_c**2 * x + 2 * kappa_tilde_c * x**2 - 2 * x**3 + 4 * np.cos(phi) * x) / (2 * np.sin(phi))
         degen_list.append(
             Degeneracy(
-                degeneracy_type=DegeneracyType.PRIMARY_TPD if x < 0 and corresponding_df < 0 else DegeneracyType.SECONDARY_TPD,
+                degeneracy_type=DegeneracyType.PRIMARY_TPD if x < 0 else DegeneracyType.SECONDARY_TPD,
                 Delta_tilde_kappa=x,
                 Delta_tilde_f=corresponding_df
             )

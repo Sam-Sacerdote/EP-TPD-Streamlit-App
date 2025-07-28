@@ -15,15 +15,23 @@ st.sidebar.header("System Parameters")
 kappa_tilde_c = st.sidebar.slider(r"$\tilde{\kappa}_c$", 0.0, 2.5, 0.68, step=0.01)
 
 phi_labels = {
-    "0": 0.0,
-    "π/4": 0.25 * np.pi,
-    "π/2": 0.5 * np.pi,
-    "3π/4": 0.75 * np.pi,
+    "0": 0,
+    "π/8": np.pi / 8,
+    "π/4": np.pi / 4,
+    "3π/8": 3 * np.pi / 8,
+    "π/2": np.pi / 2,
+    "5π/8": 5 * np.pi / 8,
+    "3π/4": 3 * np.pi / 4,
+    "7π/8": 7 * np.pi / 8,
     "π": np.pi,
-    "5π/4": 1.25 * np.pi,
-    "3π/2": 1.5 * np.pi,
-    "7π/4": 1.75 * np.pi,
-    "2π": 0.0
+    "9π/8": 9 * np.pi / 8,
+    "5π/4": 5 * np.pi / 4,
+    "11π/8": 11 * np.pi / 8,
+    "3π/2": 3 * np.pi / 2,
+    "13π/8": 13 * np.pi / 8,
+    "7π/4": 7 * np.pi / 4,
+    "15π/8": 15 * np.pi / 8,
+    "2π": 0
 }
 
 phi_label = st.sidebar.select_slider("Φ - Coupling Phase", options=list(phi_labels.keys()), value="0")
@@ -132,13 +140,13 @@ plot_degeneracies(tpds)
 fig1.update_layout(
     xaxis_title= '𝛥̃ₖ',
     yaxis_title= '𝛥̃𝑓',
-    xaxis_title_font=dict(size=20),
-    yaxis_title_font=dict(size=20),
+    xaxis_title_font=dict(size=30),
+    yaxis_title_font=dict(size=30),
     legend=dict(
         bgcolor = 'lightgrey',
         orientation='h',
         yanchor='top',
-        y = -0.15,
+        y = -0.20,
         xanchor='center',
         x = 0.5,
         font=dict(size=20)
@@ -177,10 +185,14 @@ elif phi == np.pi:
     x2_label = '𝛥̃𝑓'
     x2 = np.linspace(df_center - 1, df_center + 1, 2000)
     delta_kappa = 0
-elif phi == 0.5 * np.pi:
-    x2_label = '𝛥̃ₖ'
-    x2 = np.linspace(dk_center - 0.15, dk_center + 0.25, 2000)
+# elif abs(phi - np.pi) <= np.pi / 8:
+#     x2_label = '𝛥̃𝑓'
+#     if phi > np.pi:
+#         x2 = np.linspace(df_center - 0.15, df_center + 0.25, 2000)
+#     else:
+#         x2 = np.linspace(df_center + 0.25, df_center - 0.15, 2000)
 else:
+    x2_label = '𝛥̃ₖ'
     x2 = np.linspace(dk_center - 0.15, dk_center + 0.25, 2000)
 
 # Set up nu+, nu- and nu_0
@@ -194,10 +206,10 @@ for i, x in enumerate(x2):
         result = peak_location(J, f_c, kappa_tilde_c, delta_f, x, phi)
     elif phi == np.pi:
         result = peak_location(J, f_c, kappa_tilde_c, x, delta_kappa, phi)
-    elif phi == 0.5 * np.pi:
-        result = peak_location(J, f_c, kappa_tilde_c, (2 * np.sin(phi)) / x, x, phi)
+    # elif abs(phi - np.pi) <= np.pi / 8:
+    #     result = peak_location(J, f_c, kappa_tilde_c, x, (2 * np.sin(phi)) / x, phi)
     else:
-        result = [0]
+        result = peak_location(J, f_c, kappa_tilde_c, (2 * np.sin(phi)) / x, x, phi)
 
     if len(result) == 2:
         nu_plus[i] = result[0]
@@ -205,22 +217,24 @@ for i, x in enumerate(x2):
     else:
         nu_0[i] = result[0]
 
-# If phi is 0, pi/2, or pi plot the splitting
-if phi in (0, np.pi/2, np.pi):
-    fig2 = go.Figure()
 
-    fig2.add_trace(go.Scatter(x=x2, y=nu_plus, mode='lines', name='ν₊₋', legendgroup='nu_pm', line=dict(width=4, color='black')))
-    fig2.add_trace(go.Scatter(x=x2, y=nu_minus, mode='lines', showlegend=False, line=dict(width=4, color='black')))
-    fig2.add_trace(go.Scatter(x=x2, y=nu_0, mode='lines', showlegend=False, line=dict(width=4, color='black')))
+fig2 = go.Figure()
 
-    fig2.update_layout(
-        title=f"Primary TPD Peak Splitting",
-        title_font = dict(size=25),
-        xaxis_title = x2_label,
-        yaxis_title = "Frequency [arb.]",
-        xaxis_title_font = dict(size=20),
-        yaxis_title_font = dict(size=20),
-        height=500
-    )
+fig2.add_trace(go.Scatter(x=x2, y=nu_plus, mode='lines', name='ν±', legendgroup='nu_pm', line=dict(width=4, color='black')))
+fig2.add_trace(go.Scatter(x=x2, y=nu_minus, mode='lines', showlegend=False, line=dict(width=4, color='black')))
+fig2.add_trace(go.Scatter(x=x2, y=nu_0, mode='lines', showlegend=False, line=dict(width=4, color='black')))
 
-    st.plotly_chart(fig2, use_container_width=True)
+fig2.update_layout(
+    title=f"Primary TPD Peak Splitting",
+    title_font = dict(size=25),
+    xaxis_title = x2_label,
+    yaxis_title = "Frequency [arb.]",
+    xaxis_title_font = dict(size=30),
+    yaxis_title_font = dict(size=30),
+    height=500,
+    legend=dict(font=dict(size=25)),
+    xaxis=dict(showgrid=False),
+    yaxis=dict(showgrid=False)
+)
+
+st.plotly_chart(fig2, use_container_width=True)

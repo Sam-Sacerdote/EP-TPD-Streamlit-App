@@ -21,8 +21,11 @@ def _eigenvalues_core(J: float, kappa_c: float, delta_f: float, delta_kappa: flo
     delta_lambda = np.sqrt(-delta_f**2 + 2 * delta_f * delta_kappa * 1j + delta_kappa**2 - 4 * J * np.exp(1j * phi))
     lambda_plus = lambda_0 + delta_lambda / 2
     lambda_minus = lambda_0 - delta_lambda / 2
-    return np.array([lambda_plus, lambda_minus])
-
+    lambdas = np.array([lambda_plus, lambda_minus])
+    
+    # Sort so lambda_plus has the higher imaginary part
+    idx = np.argsort(np.imag(lambdas))[::-1]  # descending order
+    return lambdas[idx]
 
 def _p_q_discriminant_core(
         J: float,

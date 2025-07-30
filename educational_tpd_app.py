@@ -5,7 +5,7 @@ from tpd_locations_nd import ep_location, tpd_location
 from pt_peaks_MODEL import peak_location, eigenvalues
 
 # Create a title for the App
-st.title("EP and TPD Locations")
+st.title("Exceptional Point and Transmission Peak Degeneracy Locations")
 
 # Link to preprint of the paper
 st.markdown("[Unification of Exceptional Points and Transmission Peak Degeneracies in a Highly Tunable Magnon-Photon Dimer](https://arxiv.org/abs/2506.09141)")

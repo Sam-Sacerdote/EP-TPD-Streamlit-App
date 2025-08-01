@@ -214,7 +214,7 @@ def main():
             bgcolor = 'lightgrey',
             orientation='h',
             yanchor='top',
-            y = -0.20,
+            y = -0.2,
             xanchor='center',
             x = 0.5,
             font=dict(size=20)
@@ -351,7 +351,7 @@ def main():
         yaxis_title = "Frequency [arb.]",
         xaxis_title_font = dict(size=30),
         yaxis_title_font = dict(size=30),
-        height=500,
+        # height=500,
         legend=dict(font=dict(size=25)),
         xaxis=dict(showgrid=False),
         yaxis=dict(showgrid=False)

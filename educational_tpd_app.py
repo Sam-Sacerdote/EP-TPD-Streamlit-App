@@ -220,7 +220,6 @@ def main():
             font=dict(size=20)
             ),
         margin=dict(t=20),
-        # width=650,
         height=650,
     )
 

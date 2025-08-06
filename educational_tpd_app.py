@@ -105,7 +105,7 @@ def main():
 
     # create sidebar with the Parameters
     st.markdown('<p style="font-size:18px;">System Parameters:</p>', unsafe_allow_html=True)
-    kappa_tilde_c = st.slider(r"$\tilde{\kappa}_c$", 0.0, 2.5, 0.68, step=0.01)
+    kappa_tilde_c = st.slider(r"$\tilde{\kappa}_c$", -2.5, 2.5, 0.68, step=0.01)
 
     phi_labels = {
         "0": 0,
@@ -357,6 +357,133 @@ def main():
     )
 
     st.plotly_chart(fig2, use_container_width=True)
+    # -----------------------------------------------------------------------
+    # find location of Secondary TPD
+    secondary_tpd = None
+    for degen in tpds:
+        if degen.degeneracy_type.name == "SECONDARY_TPD":
+            secondary_tpd = degen
+            break
+    dk_tpd = secondary_tpd.Delta_tilde_kappa
+    df_tpd = secondary_tpd.Delta_tilde_f
+
+    # find location of secondary EP
+    secondary_ep = None
+    for degen in eps:
+        if degen.degeneracy_type.name == "SECONDARY_EP":
+            secondary_ep = degen
+            break
+    dk_ep = secondary_ep.Delta_tilde_kappa
+    df_ep = secondary_ep.Delta_tilde_f
+
+    # create different x axes depending on phi
+    if phi == 0:
+        x2_label = '𝛥̃ₖ'
+        x2 = np.linspace(dk_ep - 2.5, dk_ep + 1, 2000)
+    elif phi == np.pi:
+        x2_label = '𝛥̃𝑓'
+        x2 = np.linspace(df_ep - 2.5, df_ep + 1, 2000)
+        delta_kappa = 0
+    else:
+        x2_label = '𝛥̃ₖ'
+        x2 = np.linspace(0.18, dk_ep + 0.5, 2000)
+
+    # set up nu and lambda
+    nu_plus = np.full_like(x2, np.nan)
+    nu_minus = np.full_like(x2, np.nan)
+    nu_0 = np.full_like(x2, np.nan)
+    lambda_plus = np.full_like(x2, np.nan)
+    lambda_minus = np.full_like(x2, np.nan)
+    lambda_0 = np.full_like(x2, np.nan)
+
+    # calculate EP and TPD peak locations for each x value
+    instability_val = None
+    instability_x_candidates = []
+    previous_instability = None
+    for i, x in enumerate(x2):
+        if phi == np.pi:
+            df = x
+            dk = delta_kappa
+        else:
+            df = (2 * np.sin(phi)) / x
+            dk = x
+        
+        tpd_result = peak_location(J, f_c, kappa_tilde_c, df, dk, phi)
+        ep_result = -1 * eigenvalues(J, f_c, kappa_tilde_c, df, dk, phi).imag
+        
+        if len(tpd_result) == 2:
+            nu_plus[i] = tpd_result[0]
+            nu_minus[i] = tpd_result[1]
+        else:
+            nu_0[i] = tpd_result[0]
+
+        if len(ep_result) == 2:
+            lambda_plus[i] = ep_result[0]
+            lambda_minus[i] = ep_result[1]
+        else:
+            lambda_0[i] = ep_result[0]
+        
+        # compute instability condition
+        delta_lambda = np.sqrt(-df**2 + 2 * df * dk * 1j + dk**2 - 4 * J * np.exp(1j * phi))
+        current_instability = delta_lambda.real - (kappa_tilde_c - dk)
+        
+        # detect sign change
+        if previous_instability is not None:
+            if np.sign(current_instability) != np.sign(previous_instability):
+                # Store candidate (delta_f or delta_kappa depending on phi)
+                instability_val_candidate = df if phi == np.pi else dk
+                instability_x_candidates.append(instability_val_candidate)
+
+        previous_instability = current_instability
+
+    # find instability trace
+    target_val = df_ep if phi == np.pi else dk_ep
+    if instability_x_candidates:
+        instability_val = min(instability_x_candidates, key=lambda val: abs(val - target_val))
+    else:
+        instability_val = None
+
+    # calculate max and min y-value for vertical traces
+    yvals = np.concatenate([lambda_plus, lambda_minus, lambda_0, nu_plus, nu_minus, nu_0])
+    ymin = np.nanmin(yvals)
+    ymax = np.nanmax(yvals)
+
+    # create plot for Secondary EP and TPD peak splitting
+    fig3 = go.Figure()
+    plot_trace(fig3, x2, nu_plus, 'ν±', 'nu_pm', True, dict(width=4, color='purple'))
+    plot_trace(fig3, x2, nu_minus, 'ν±', 'nu_pm', False, dict(width=4, color='purple'))
+    plot_trace(fig3, x2, nu_0, 'ν±', 'nu_pm', False, dict(width=4, color='purple'))
+    plot_trace(fig3, x2, lambda_plus, '|Im(λ±)|', 'lambda_pm', True, dict(width=4, color='black', dash='dash'))
+    plot_trace(fig3, x2, lambda_minus, '|Im(λ±)|', 'lambda_pm', False, dict(width=4, color='black', dash='dash'))
+    plot_trace(fig3, x2, lambda_0, '|Im(λ±)|', 'lambda_pm', False, dict(width=4, color='black', dash='dash'))
+
+    # get values for the EP and TPD traces
+    if phi == np.pi:
+        tpd_val = df_tpd
+        ep_val = df_ep
+    else:
+        tpd_val = dk_tpd
+        ep_val = dk_ep
+
+    # plot the vertical lines
+    plot_trace(fig3, [tpd_val, tpd_val], [ymin, ymax], 'TPD', None, True, dict(width=4, color='cyan'))
+    plot_trace(fig3, [ep_val, ep_val], [ymin, ymax], 'EP', None, True, dict(width=4, color='red'))
+    plot_trace(fig3, [instability_val, instability_val], [ymin, ymax], 'Instability', None, (instability_val != None), dict(width=4, color='chartreuse'))
+
+    fig3.update_layout(
+        title=f"Secondary EP and TPD Peak Splitting",
+        title_font = dict(size=25),
+        xaxis_title = x2_label,
+        yaxis_title = "Frequency [arb.]",
+        xaxis_title_font = dict(size=30),
+        yaxis_title_font = dict(size=30),
+        # height=500,
+        legend=dict(font=dict(size=25)),
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=False)
+    )
+
+    st.plotly_chart(fig3, use_container_width=True)
 
     # Relevant equations
     st.subheader("Relevant Equations:")
@@ -396,4 +523,5 @@ def main():
             Unification of Exceptional Points and Transmission Peak Degeneracies in a Highly 
             Tunable Magnon-Photon Dimer. arXiv preprint arXiv:2506.09141.""")
     
-main()
+if __name__ == "__main__":
+    main()
